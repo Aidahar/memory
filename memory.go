@@ -1,22 +1,27 @@
-package memory
-
-type Memory struct {
-	cache map[string]interface{}
+package cache                                                                                                         
+ 
+type Cache struct {
+    cache map[string]interface{}
 }
 
-func New() *Memory {
-	return &Memory{
-		cache: make(map[string]interface{}),
-	}
+func New() *Cache {
+   return &Cache{
+       cache: make(map[string]interface{}),
+   }
 }
 
-func (m *Memory) Set(key string, value interface{}) {
-	m.cache[key] = value
+func (m *Cache) Set(key string, value interface{}) {
+    m.cache[key] = value
 }
 
-func (m *Memory) Get(key string) interface{} {
-	return m.cache[key]
+func (m *Cache) Get(key string) interface{} {
+    k, exists := m.cache[key]
+    if exists {
+        return k
+    }
+    return nil
+
 }
-func (m *Memory) Delete(key string) {
-	delete(m.cache, key)
+func (m *Cache) Delete(key string) {
+    delete(m.cache, key)
 }
