@@ -2,37 +2,36 @@ package cache
 
 import (
 	"errors"
+	"sync"
 	"time"
 )
 
 type Cache struct {
-	cache     map[string]interface{}
-	createdAt time.Time
-	duration  time.Duration
+	cache map[string]interface{}
+	mu    *sync.Mutex
 }
 
 func New() *Cache {
 	return &Cache{
-		cache:     make(map[string]interface{}),
-		createdAt: time.Now(),
-		duration:  0,
+		cache: make(map[string]interface{}),
+		mu:    new(sync.Mutex),
 	}
 }
 
 func (m *Cache) Set(key string, value interface{}, ttl time.Duration) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.cache[key] = value
-	m.createdAt = time.Now()
-	m.duration = ttl
+	f := func() {
+		delete(m.cache, key)
+	}
+	time.AfterFunc(ttl, f)
 }
 
 func (m *Cache) Get(key string) (interface{}, error) {
-	t := time.Now()
 	k, ok := m.cache[key]
 	if !ok {
 		return nil, errors.New("invalid key")
-	}
-	if m.createdAt.Sub(t) < m.duration {
-		delete(m.cache, key)
 	}
 	return k, nil
 }
