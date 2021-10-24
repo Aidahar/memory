@@ -29,6 +29,8 @@ func (m *Cache) Set(key string, value interface{}, ttl time.Duration) {
 }
 
 func (m *Cache) Get(key string) (interface{}, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	k, ok := m.cache[key]
 	if !ok {
 		return nil, errors.New("invalid key")
