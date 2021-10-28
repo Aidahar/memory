@@ -39,5 +39,7 @@ func (m *Cache) Get(key string) (interface{}, error) {
 }
 
 func (m *Cache) Delete(key string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	delete(m.cache, key)
 }
