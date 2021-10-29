@@ -8,6 +8,7 @@ import (
 
 type Cache struct {
 	cache        map[string]interface{}
+	timeCreation time.Time
 	timeDuration time.Duration
 	mu           *sync.Mutex
 }
@@ -22,12 +23,12 @@ func New() *Cache {
 func (m *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	t := time.Now()
+	m.timeCreation = time.Now()
 	m.timeDuration = ttl
 	m.cache[key] = value
-	if time.Since(t) < m.timeDuration {
-		delete(m.cache, key)
-	}
+	// if time.Since(t) < m.timeDuration {
+	// 	delete(m.cache, key)
+	// }
 	// f := func() {
 	// 	delete(m.cache, key)
 	// }
@@ -37,6 +38,9 @@ func (m *Cache) Set(key string, value interface{}, ttl time.Duration) {
 func (m *Cache) Get(key string) (interface{}, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if time.Since(m.timeCreation) < m.timeDuration {
+		delete(m.cache, key)
+	}
 	k, ok := m.cache[key]
 	if !ok {
 		return nil, errors.New("invalid key")
