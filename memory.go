@@ -6,50 +6,65 @@ import (
 	"time"
 )
 
-type Cache struct {
-	cache        map[string]interface{}
+type CacheItem struct {
+	value        interface{}
 	timeCreation time.Time
 	timeDuration time.Duration
-	mu           *sync.Mutex
+}
+
+type Cache struct {
+	cache map[string]CacheItem
+	mu    *sync.Mutex
 }
 
 func New() *Cache {
-	return &Cache{
-		cache: make(map[string]interface{}),
+	cacheNew := Cache{
+		cache: make(map[string]CacheItem),
 		mu:    new(sync.Mutex),
 	}
+	go cacheNew.TimeExpireTask()
+	return &cacheNew
 }
 
-func (m *Cache) Set(key string, value interface{}, ttl time.Duration) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.timeCreation = time.Now()
-	m.timeDuration = ttl
-	m.cache[key] = value
-	// if time.Since(t) < m.timeDuration {
-	// 	delete(m.cache, key)
-	// }
-	// f := func() {
-	// 	delete(m.cache, key)
-	// }
-	// time.AfterFunc(ttl, f)
-}
-
-func (m *Cache) Get(key string) (interface{}, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if time.Since(m.timeCreation) < m.timeDuration {
-		delete(m.cache, key)
+func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cache[key] = CacheItem{
+		value:        value,
+		timeCreation: time.Now(),
+		timeDuration: ttl,
 	}
-	k, ok := m.cache[key]
+}
+
+func (c *Cache) Get(key string) (interface{}, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if time.Since(c.cache[key].timeCreation) < c.cache[key].timeDuration {
+		delete(c.cache, key)
+	}
+	k, ok := c.cache[key]
 	if !ok {
 		return nil, errors.New("invalid key")
 	}
 	return k, nil
 }
 
-func (m *Cache) Delete(key string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	delete(m.cache, key)
+func (c *Cache) Delete(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.cache, key)
+}
+
+func (c *Cache) TimeExpireTask() {
+	for {
+		c.DeleteExpired()
+	}
+}
+
+func (c *Cache) DeleteExpired() {
+	for key, value := range c.cache {
+		if time.Since(value.timeCreation) < value.timeDuration {
+			c.Delete(key)
+		}
+	}
 }
