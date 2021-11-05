@@ -39,9 +39,6 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 func (c *Cache) Get(key string) (interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if time.Since(c.cache[key].timeCreation) < c.cache[key].timeDuration {
-		delete(c.cache, key)
-	}
 	k, ok := c.cache[key]
 	if !ok {
 		return nil, errors.New("invalid key")
