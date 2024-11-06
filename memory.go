@@ -59,6 +59,8 @@ func (c *Cache) TimeExpireTask() {
 }
 
 func (c *Cache) DeleteExpired() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	for key, value := range c.cache {
 		if time.Since(value.timeCreation) > value.timeDuration {
 			c.Delete(key)
